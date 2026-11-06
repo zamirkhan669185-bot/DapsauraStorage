@@ -1,0 +1,497 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DAPSAURA STORAGE</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#eef3f9;color:#172b42}
+header{background:#102d50;color:white;padding:22px;text-align:center}
+header h1{margin:0;font-size:27px}
+header p{color:#cbd9e8}
+main{max-width:1050px;margin:25px auto;padding:15px}
+.card{background:white;padding:20px;border-radius:13px;margin-bottom:18px;box-shadow:0 4px 15px #0001}
+input,select{padding:11px;border:1px solid #ccd5df;border-radius:7px;margin:5px;max-width:100%}
+button{padding:10px 13px;border:0;border-radius:7px;background:#1769aa;color:white;cursor:pointer;margin:3px}
+button:hover{background:#104b7c}
+.danger{background:#bd2929}
+.green{background:#18864b}
+.secondary{background:#68798c}
+#dashboard,#forgot,#questions{display:none}
+.stats{display:flex;gap:12px;flex-wrap:wrap}
+.stat{background:#eaf3ff;padding:15px;border-radius:9px;flex:1;min-width:130px}
+.stat strong{display:block;font-size:22px;margin-top:7px}
+table{width:100%;border-collapse:collapse;min-width:550px}
+td,th{padding:11px;border-bottom:1px solid #ddd;text-align:left}
+.small{font-size:12px;color:#637386;line-height:1.5}
+.full{width:95%;max-width:450px}
+#viewer{display:none;position:fixed;inset:0;background:#071525ed;z-index:10;padding:15px}
+#viewerBox{background:white;border-radius:12px;height:100%;padding:12px;display:flex;flex-direction:column}
+#preview{width:100%;height:90%;border:0;object-fit:contain}
+.actions{white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+<h1>☁ DAPSAURA STORAGE</h1>
+<p>Your Personal Digital Storage</p>
+</header>
+
+<main>
+
+<!-- LOGIN -->
+<div class="card" id="login">
+<h2>🔐 Login / Create Account</h2>
+<input id="mobile" class="full" maxlength="10" placeholder="10 Digit Mobile Number">
+<br>
+<input id="pin" class="full" type="password" maxlength="8" placeholder="Enter PIN">
+<br>
+<button onclick="login()">Login / Register</button>
+<button class="secondary" onclick="openForgot()">Forgot PIN?</button>
+<p id="loginMsg"></p>
+<p class="small">पहली बार लॉगिन करने पर सुरक्षा सवाल सेट करने होंगे।</p>
+</div>
+
+<!-- SECURITY QUESTIONS SETUP -->
+<div class="card" id="questions">
+<h2>🛡 Account Security Setup</h2>
+<p>अपना अकाउंट सुरक्षित रखने के लिए तीन सवालों के जवाब दें।</p>
+
+<label>1. आपके बचपन के स्कूल का नाम?</label><br>
+<input id="q1" class="full"><br>
+
+<label>2. आपके पसंदीदा शहर का नाम?</label><br>
+<input id="q2" class="full"><br>
+
+<label>3. आपके पसंदीदा रंग का नाम?</label><br>
+<input id="q3" class="full"><br>
+
+<button onclick="saveQuestions()">Save Security Answers</button>
+<p id="qMsg"></p>
+</div>
+
+<!-- FORGOT PIN -->
+<div class="card" id="forgot">
+<h2>🔑 Forgot PIN / Reset PIN</h2>
+<p>अपने अकाउंट के तीनों सुरक्षा सवालों के सही जवाब दें।</p>
+<input id="fm" class="full" maxlength="10" placeholder="Registered Mobile Number"><br>
+
+<label>1. बचपन के स्कूल का नाम?</label><br>
+<input id="fa1" class="full"><br>
+
+<label>2. पसंदीदा शहर?</label><br>
+<input id="fa2" class="full"><br>
+
+<label>3. पसंदीदा रंग?</label><br>
+<input id="fa3" class="full"><br>
+
+<button onclick="verifyAnswers()">Verify Answers</button>
+
+<div id="resetArea" style="display:none">
+<h3>नया PIN बनाएं</h3>
+<input id="newPin" type="password" maxlength="8" placeholder="New PIN">
+<input id="confirmPin" type="password" maxlength="8" placeholder="Confirm PIN">
+<br>
+<button class="green" onclick="resetPin()">Save New PIN</button>
+</div>
+<p id="forgotMsg"></p>
+<button class="secondary" onclick="backLogin()">Back to Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+<div class="stats">
+<div class="stat">Total Documents<strong id="count">0</strong></div>
+<div class="stat">Used Storage<strong id="used">0 MB</strong></div>
+<div class="stat">Account<strong>Active</strong></div>
+</div>
+
+<div class="card">
+<h2>📤 Upload Documents</h2>
+<input type="file" id="file" multiple>
+<button onclick="upload()">Upload Files</button>
+<p class="small">PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX, ZIP, MP4 और अन्य फाइलें।</p>
+<p id="status"></p>
+</div>
+
+<div class="card">
+<h2>📁 My Documents</h2>
+<input id="search" class="full" placeholder="Search document..." oninput="showFiles()">
+<div style="overflow-x:auto">
+<table>
+<thead>
+<tr>
+<th>Document Name</th>
+<th>Size</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+</div>
+
+<button onclick="logout()">Logout</button>
+</div>
+</main>
+
+<!-- VIEWER -->
+<div id="viewer">
+<div id="viewerBox">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+<strong id="viewName">Document Viewer</strong>
+<button onclick="closeViewer()" class="danger">Close ✕</button>
+</div>
+<div id="previewArea" style="flex:1;min-height:0;margin-top:10px">
+<iframe id="preview" title="Document preview"></iframe>
+<img id="imagePreview" style="display:none;max-width:100%;max-height:100%;margin:auto;object-fit:contain">
+</div>
+<p id="viewInfo" class="small"></p>
+</div>
+</div>
+
+<script>
+let db=null;
+let user="";
+let resetUser="";
+let previewURL=null;
+
+const $=id=>document.getElementById(id);
+
+function normalize(s){
+return String(s).trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function accountKey(m){
+return "dapsaura_account_"+m;
+}
+
+function openDB(){
+return new Promise((resolve,reject)=>{
+let r=indexedDB.open("DapsauraStorageV2",1);
+r.onupgradeneeded=()=>{
+let d=r.result;
+if(!d.objectStoreNames.contains("files")){
+d.createObjectStore("files",{keyPath:"id",autoIncrement:true});
+}
+};
+r.onsuccess=()=>resolve(r.result);
+r.onerror=()=>reject(r.error);
+});
+}
+
+function getAccount(m){
+let x=localStorage.getItem(accountKey(m));
+return x?JSON.parse(x):null;
+}
+
+function saveAccount(m,data){
+localStorage.setItem(accountKey(m),JSON.stringify(data));
+}
+
+async function login(){
+let m=$("mobile").value.trim();
+let p=$("pin").value.trim();
+
+if(!/^\d{10}$/.test(m)||!/^\d{4,8}$/.test(p)){
+$("loginMsg").innerText="सही मोबाइल नंबर और 4 से 8 अंकों का PIN डालें।";
+return;
+}
+
+try{
+db=await openDB();
+let account=getAccount(m);
+
+if(!account){
+user=m;
+$("login").style.display="none";
+$("questions").style.display="block";
+$("qMsg").innerText="नया PIN और सुरक्षा सवाल सेट करें।";
+window.firstPin=p;
+return;
+}
+
+if(account.pin!==p){
+$("loginMsg").innerText="गलत PIN! Forgot PIN का इस्तेमाल करें।";
+return;
+}
+
+user=m;
+openDashboard();
+}catch(e){
+$("loginMsg").innerText="Database error: "+e.message;
+}
+}
+
+function saveQuestions(){
+let a1=normalize($("q1").value);
+let a2=normalize($("q2").value);
+let a3=normalize($("q3").value);
+
+if(!a1||!a2||!a3){
+$("qMsg").innerText="तीनों सवालों के जवाब जरूरी हैं।";
+return;
+}
+
+if(!window.firstPin){
+$("qMsg").innerText="PIN नहीं मिला। फिर से अकाउंट बनाएं।";
+return;
+}
+
+saveAccount(user,{
+pin:window.firstPin,
+answers:[a1,a2,a3],
+created:Date.now()
+});
+
+window.firstPin=null;
+$("questions").style.display="none";
+openDashboard();
+}
+
+function openDashboard(){
+$("dashboard").style.display="block";
+$("login").style.display="none";
+$("questions").style.display="none";
+$("forgot").style.display="none";
+showFiles();
+}
+
+function openForgot(){
+$("login").style.display="none";
+$("forgot").style.display="block";
+$("resetArea").style.display="none";
+$("forgotMsg").innerText="";
+}
+
+function backLogin(){
+$("forgot").style.display="none";
+$("login").style.display="block";
+}
+
+function verifyAnswers(){
+let m=$("fm").value.trim();
+let a=getAccount(m);
+
+if(!a){
+$("forgotMsg").innerText="इस मोबाइल नंबर का अकाउंट नहीं मिला।";
+return;
+}
+
+let answers=[
+normalize($("fa1").value),
+normalize($("fa2").value),
+normalize($("fa3").value)
+];
+
+if(answers.some((x,i)=>x!==a.answers[i])){
+$("forgotMsg").innerText="सुरक्षा सवालों के जवाब गलत हैं।";
+$("resetArea").style.display="none";
+return;
+}
+
+resetUser=m;
+$("forgotMsg").innerText="सभी जवाब सही हैं। अब नया PIN बनाएं।";
+$("resetArea").style.display="block";
+}
+
+function resetPin(){
+let p=$("newPin").value;
+let c=$("confirmPin").value;
+
+if(!/^\d{4,8}$/.test(p)){
+alert("नया PIN 4 से 8 अंकों का होना चाहिए।");
+return;
+}
+if(p!==c){
+alert("दोनों PIN एक जैसे नहीं हैं।");
+return;
+}
+
+let a=getAccount(resetUser);
+if(!a)return;
+
+a.pin=p;
+saveAccount(resetUser,a);
+
+$("forgotMsg").innerText="PIN सफलतापूर्वक बदल दिया गया। अब Login करें।";
+$("resetArea").style.display="none";
+$("forgot").style.display="none";
+$("login").style.display="block";
+$("mobile").value=resetUser;
+$("pin").value="";
+$("loginMsg").innerText="नया PIN सेव हो गया है।";
+resetUser="";
+}
+
+function getFiles(){
+return new Promise((resolve,reject)=>{
+let r=db.transaction("files").objectStore("files").getAll();
+r.onsuccess=()=>resolve(r.result.filter(f=>f.owner===user));
+r.onerror=()=>reject(r.error);
+});
+}
+
+async function upload(){
+let files=[...$("file").files];
+if(!files.length){
+$("status").innerText="पहले फाइल चुनें।";
+return;
+}
+
+try{
+for(let f of files){
+await new Promise((resolve,reject)=>{
+let t=db.transaction("files","readwrite");
+t.objectStore("files").add({
+name:f.name,
+size:f.size,
+type:f.type,
+blob:f,
+owner:user,
+date:Date.now()
+});
+t.oncomplete=resolve;
+t.onerror=()=>reject(t.error);
+});
+}
+$("status").innerText="सभी फाइलें सेव हो गईं।";
+$("file").value="";
+showFiles();
+}catch(e){
+$("status").innerText="Storage error: "+e.message;
+}
+}
+
+async function showFiles(){
+let files=await getFiles();
+let q=$("search").value.toLowerCase();
+let filtered=files.filter(f=>f.name.toLowerCase().includes(q));
+
+$("list").innerHTML="";
+
+filtered.forEach(f=>{
+let tr=document.createElement("tr");
+let name=document.createElement("td");
+name.textContent=f.name;
+
+let size=document.createElement("td");
+size.textContent=(f.size/1024/1024).toFixed(2)+" MB";
+
+let actions=document.createElement("td");
+actions.className="actions";
+
+let view=document.createElement("button");
+view.textContent="View";
+view.className="green";
+view.onclick=()=>viewFile(f);
+
+let rename=document.createElement("button");
+rename.textContent="Rename";
+rename.className="secondary";
+rename.onclick=()=>renameFile(f);
+
+let download=document.createElement("button");
+download.textContent="Download";
+download.onclick=()=>downloadFile(f);
+
+let del=document.createElement("button");
+del.textContent="Delete";
+del.className="danger";
+del.onclick=()=>deleteFile(f.id);
+
+actions.append(view,rename,download,del);
+tr.append(name,size,actions);
+$("list").append(tr);
+});
+
+$("count").innerText=files.length;
+let total=files.reduce((a,b)=>a+b.size,0);
+$("used").innerText=(total/1024/1024).toFixed(2)+" MB";
+}
+
+async function renameFile(f){
+let newName=prompt("नया फाइल नाम लिखें:",f.name);
+if(!newName||!newName.trim())return;
+
+let updated={...f,name:newName.trim()};
+
+await new Promise((resolve,reject)=>{
+let t=db.transaction("files","readwrite");
+t.objectStore("files").put(updated);
+t.oncomplete=resolve;
+t.onerror=()=>reject(t.error);
+});
+showFiles();
+}
+
+function viewFile(f){
+closeViewer();
+$("viewName").innerText=f.name;
+$("viewer").style.display="block";
+$("viewInfo").innerText="File size: "+(f.size/1024/1024).toFixed(2)+" MB";
+
+previewURL=URL.createObjectURL(f.blob);
+
+if(f.type.startsWith("image/")){
+$("preview").style.display="none";
+$("imagePreview").style.display="block";
+$("imagePreview").src=previewURL;
+}else if(f.type==="application/pdf"){
+$("imagePreview").style.display="none";
+$("preview").style.display="block";
+$("preview").src=previewURL;
+}else{
+$("imagePreview").style.display="none";
+$("preview").style.display="none";
+$("viewInfo").innerText="इस फाइल का सीधा Preview उपलब्ध नहीं है। Download करके खोलें।";
+}
+}
+
+function closeViewer(){
+$("viewer").style.display="none";
+$("preview").src="about:blank";
+$("imagePreview").src="";
+$("preview").style.display="block";
+$("imagePreview").style.display="none";
+if(previewURL){
+URL.revokeObjectURL(previewURL);
+previewURL=null;
+}
+}
+
+function downloadFile(f){
+let url=URL.createObjectURL(f.blob);
+let a=document.createElement("a");
+a.href=url;
+a.download=f.name;
+a.click();
+setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+async function deleteFile(id){
+if(!confirm("क्या यह फाइल डिलीट करनी है?"))return;
+
+await new Promise(resolve=>{
+let t=db.transaction("files","readwrite");
+t.objectStore("files").delete(id);
+t.oncomplete=resolve;
+});
+showFiles();
+}
+
+function logout(){
+user="";
+$("dashboard").style.display="none";
+$("login").style.display="block";
+$("pin").value="";
+$("loginMsg").innerText="";
+}
+
+</script>
+</body>
+</html>
